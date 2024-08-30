@@ -1,9 +1,12 @@
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ValidationError
 from django.shortcuts import render
 from django.urls import reverse_lazy
 from django.views import generic
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.http import HttpResponseRedirect
 
+from .forms import DriverCreationForm, DriverLicenseUpdateForm, CarForm
 from .models import Driver, Car, Manufacturer
 
 
@@ -64,7 +67,7 @@ class CarDetailView(LoginRequiredMixin, generic.DetailView):
 
 class CarCreateView(LoginRequiredMixin, generic.CreateView):
     model = Car
-    fields = "__all__"
+    form_class = CarForm
     success_url = reverse_lazy("taxi:car-list")
 
 
@@ -87,3 +90,46 @@ class DriverListView(LoginRequiredMixin, generic.ListView):
 class DriverDetailView(LoginRequiredMixin, generic.DetailView):
     model = Driver
     queryset = Driver.objects.all().prefetch_related("cars__manufacturer")
+
+
+class DriverCreateView(LoginRequiredMixin, generic.CreateView):
+    model = Driver
+    form_class = DriverCreationForm
+
+    def get_success_url(self):
+        return reverse_lazy("taxi:driver-detail", args=(self.object.id,))
+
+
+class DriverDeleteView(LoginRequiredMixin, generic.DeleteView):
+    model = Driver
+    success_url = reverse_lazy("taxi:car-list")
+
+
+class DriverLicenseUpdateView(LoginRequiredMixin, generic.UpdateView):
+    model = Driver
+    form_class = DriverLicenseUpdateForm
+    template_name = "taxi/driver_license_update.html"
+
+
+def add_current_driver(request, pk):
+    if request.method == "POST":
+        try:
+            Car.objects.get(id=pk).drivers.add(request.user)
+        except Car.DoesNotExist:
+            raise ValidationError("This car does not exist")
+        else:
+            return HttpResponseRedirect(
+                reverse_lazy("taxi:car-detail", args=[str(pk), ])
+            )
+
+
+def delete_current_driver(request, pk):
+    if request.method == "POST":
+        try:
+            Car.objects.get(id=pk).drivers.remove(request.user)
+        except Car.DoesNotExist:
+            raise ValidationError("This car does not exist")
+        else:
+            return HttpResponseRedirect(
+                reverse_lazy("taxi:car-detail", args=[str(pk), ])
+            )
