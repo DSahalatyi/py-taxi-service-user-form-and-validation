@@ -26,7 +26,7 @@ class Driver(AbstractUser):
         validators=[
             MinLengthValidator(8),
             MaxLengthValidator(8),
-            RegexValidator("^[A-Z]{3}\d{5}$"),
+            RegexValidator(r"^[A-Z]{3}\d{5}$"),
         ],
     )
 
