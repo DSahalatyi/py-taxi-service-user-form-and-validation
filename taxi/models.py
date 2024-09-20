@@ -1,6 +1,4 @@
 from django.core.validators import (
-    MinLengthValidator,
-    MaxLengthValidator,
     RegexValidator,
 )
 from django.db import models
@@ -24,8 +22,6 @@ class Driver(AbstractUser):
         max_length=255,
         unique=True,
         validators=[
-            MinLengthValidator(8),
-            MaxLengthValidator(8),
             RegexValidator(r"^[A-Z]{3}\d{5}$"),
         ],
     )

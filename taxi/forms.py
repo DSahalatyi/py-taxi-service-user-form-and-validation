@@ -1,11 +1,6 @@
 from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm
-from django.core.validators import (
-    MaxLengthValidator,
-    MinLengthValidator,
-    RegexValidator,
-)
 from django.forms import CheckboxSelectMultiple
 
 from taxi.models import Driver, Car
