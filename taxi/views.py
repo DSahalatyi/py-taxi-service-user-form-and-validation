@@ -65,7 +65,9 @@ class CarDetailView(LoginRequiredMixin, generic.DetailView):
     model = Car
 
     def get_queryset(self):
-        return Car.objects.filter(id=self.kwargs["pk"]).prefetch_related("drivers")
+        return Car.objects.filter(
+            id=self.kwargs["pk"]
+        ).prefetch_related("drivers")
 
 
 class CarCreateView(LoginRequiredMixin, generic.CreateView):
