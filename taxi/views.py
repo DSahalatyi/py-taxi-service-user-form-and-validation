@@ -67,19 +67,16 @@ class CarDetailView(LoginRequiredMixin, generic.DetailView):
     def post(self, *args, **kwargs):
         action = self.request.POST.get("action")
         car = Car.objects.get(id=kwargs["pk"])
-        if action == "add" and self.request.user not in car.drivers.all():
+        driver_exists = car.drivers.filter(id=self.request.user.id).exists()
+        if action == "add" and not driver_exists:
             car.drivers.add(self.request.user)
-            car.save()
-            return HttpResponseRedirect(
-                reverse_lazy("taxi:car-detail", kwargs={"pk": car.pk})
-            )
 
-        if action == "delete" and self.request.user in car.drivers.all():
+        if action == "delete" and driver_exists:
             car.drivers.remove(self.request.user)
-            car.save()
-            return HttpResponseRedirect(
-                reverse_lazy("taxi:car-detail", kwargs={"pk": car.pk})
-            )
+
+        return HttpResponseRedirect(
+            reverse_lazy("taxi:car-detail", kwargs={"pk": car.pk})
+        )
 
     def get_queryset(self):
         return (
