@@ -6,8 +6,8 @@ from django.views import generic
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponseRedirect
 
-from .forms import DriverCreationForm, DriverLicenseUpdateForm, CarForm
-from .models import Driver, Car, Manufacturer
+from taxi.forms import DriverCreationForm, DriverLicenseUpdateForm, CarForm
+from taxi.models import Driver, Car, Manufacturer
 
 
 @login_required
@@ -64,10 +64,28 @@ class CarListView(LoginRequiredMixin, generic.ListView):
 class CarDetailView(LoginRequiredMixin, generic.DetailView):
     model = Car
 
+    def post(self, *args, **kwargs):
+        action = self.request.POST.get("action")
+        car = Car.objects.get(id=kwargs["pk"])
+        if action == "add" and self.request.user not in car.drivers.all():
+            car.drivers.add(self.request.user)
+            car.save()
+            return HttpResponseRedirect(
+                reverse_lazy("taxi:car-detail", kwargs={"pk": car.pk})
+            )
+
+        if action == "delete" and self.request.user in car.drivers.all():
+            car.drivers.remove(self.request.user)
+            car.save()
+            return HttpResponseRedirect(
+                reverse_lazy("taxi:car-detail", kwargs={"pk": car.pk})
+            )
+
     def get_queryset(self):
-        return Car.objects.filter(
-            id=self.kwargs["pk"]
-        ).prefetch_related("drivers")
+        return (
+            Car.objects.filter(id=self.kwargs["pk"])
+            .prefetch_related("drivers")
+        )
 
 
 class CarCreateView(LoginRequiredMixin, generic.CreateView):
@@ -114,27 +132,3 @@ class DriverLicenseUpdateView(LoginRequiredMixin, generic.UpdateView):
     model = Driver
     form_class = DriverLicenseUpdateForm
     template_name = "taxi/driver_license_update.html"
-
-
-def add_current_driver(request, pk):
-    if request.method == "POST":
-        try:
-            Car.objects.get(id=pk).drivers.add(request.user)
-        except Car.DoesNotExist:
-            raise ValidationError("This car does not exist")
-        else:
-            return HttpResponseRedirect(
-                reverse_lazy("taxi:car-detail", args=[str(pk), ])
-            )
-
-
-def delete_current_driver(request, pk):
-    if request.method == "POST":
-        try:
-            Car.objects.get(id=pk).drivers.remove(request.user)
-        except Car.DoesNotExist:
-            raise ValidationError("This car does not exist")
-        else:
-            return HttpResponseRedirect(
-                reverse_lazy("taxi:car-detail", args=[str(pk), ])
-            )
